@@ -33,7 +33,7 @@ class AutoCropByNPS:
     RETURN_TYPES = ("IMAGE", "IMAGE")
     RETURN_NAMES = ("image1", "image2")
     FUNCTION = 'auto_crop_images'
-    CATEGORY = 'Image Processing'
+    CATEGORY = 'NPS1598'
 
     def auto_crop_images(self, crop_top, crop_bottom, crop_left, crop_right, rotation, image1=None, image2=None):
         def tensor2pil(tensor):
