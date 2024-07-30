@@ -25,28 +25,28 @@ class AutoCropByNPS:
                 "rotation": ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 1, "display": "slider"}),
             },
             "optional": {
-                "image1": ("IMAGE",),
-                "image2": ("IMAGE",),
+                "image": ("IMAGE",),
+                "mask": ("MASK",),
             }
         }
 
-    RETURN_TYPES = ("IMAGE", "IMAGE")
-    RETURN_NAMES = ("image1", "image2")
+    RETURN_TYPES = ("IMAGE", "MASK")
+    RETURN_NAMES = ("image", "mask")
     FUNCTION = 'auto_crop_images'
     CATEGORY = 'NPS1598'
 
-    def auto_crop_images(self, crop_top, crop_bottom, crop_left, crop_right, rotation, image1=None, image2=None):
+    def auto_crop_images(self, crop_top, crop_bottom, crop_left, crop_right, rotation, image=None, mask=None):
         def tensor2pil(tensor):
             return Image.fromarray((tensor.squeeze().cpu().numpy() * 255).astype(np.uint8))
 
         def pil2tensor(pil_img):
             return torch.from_numpy(np.array(pil_img)).float().div(255).unsqueeze(0)
 
-        ret_images1 = []
-        ret_images2 = []
-        
-        if image1 is not None:
-            for img_tensor in image1:
+        ret_images = []
+        ret_masks = []
+
+        if image is not None:
+            for img_tensor in image:
                 img_tensor = torch.unsqueeze(img_tensor, 0)
                 img = tensor2pil(img_tensor)
                 width, height = img.size
@@ -60,7 +60,6 @@ class AutoCropByNPS:
                 img = img.crop((left, top, right, bottom))
                 
                 # Perform expanding
-                new_width, new_height = img.size
                 if crop_top > 0:
                     img = ImageOps.expand(img, border=(0, int(height * crop_top), 0, 0), fill=(255, 255, 255))
                 if crop_bottom > 0:
@@ -72,13 +71,13 @@ class AutoCropByNPS:
 
                 img = img.rotate(-rotation, expand=True, fillcolor=(255, 255, 255))
 
-                ret_images1.append(pil2tensor(img))
+                ret_images.append(pil2tensor(img))
 
-        if image2 is not None:
-            for img_tensor in image2:
-                img_tensor = torch.unsqueeze(img_tensor, 0)
-                img = tensor2pil(img_tensor)
-                width, height = img.size
+        if mask is not None:
+            for mask_tensor in mask:
+                mask_tensor = torch.unsqueeze(mask_tensor, 0)
+                mask_img = tensor2pil(mask_tensor)
+                width, height = mask_img.size
 
                 # Perform cropping
                 left = int(width * abs(crop_left)) if crop_left < 0 else 0
@@ -86,26 +85,25 @@ class AutoCropByNPS:
                 top = int(height * abs(crop_top)) if crop_top < 0 else 0
                 bottom = height - int(height * abs(crop_bottom)) if crop_bottom < 0 else height
                 
-                img = img.crop((left, top, right, bottom))
+                mask_img = mask_img.crop((left, top, right, bottom))
                 
                 # Perform expanding
-                new_width, new_height = img.size
                 if crop_top > 0:
-                    img = ImageOps.expand(img, border=(0, int(height * crop_top), 0, 0), fill=(255, 255, 255))
+                    mask_img = ImageOps.expand(mask_img, border=(0, int(height * crop_top), 0, 0), fill=255)
                 if crop_bottom > 0:
-                    img = ImageOps.expand(img, border=(0, 0, 0, int(height * crop_bottom)), fill=(255, 255, 255))
+                    mask_img = ImageOps.expand(mask_img, border=(0, 0, 0, int(height * crop_bottom)), fill=255)
                 if crop_left > 0:
-                    img = ImageOps.expand(img, border=(int(width * crop_left), 0, 0, 0), fill=(255, 255, 255))
+                    mask_img = ImageOps.expand(mask_img, border=(int(width * crop_left), 0, 0, 0), fill=255)
                 if crop_right > 0:
-                    img = ImageOps.expand(img, border=(0, 0, int(width * crop_right), 0), fill=(255, 255, 255))
+                    mask_img = ImageOps.expand(mask_img, border=(0, 0, int(width * crop_right), 0), fill=255)
 
-                img = img.rotate(-rotation, expand=True, fillcolor=(255, 255, 255))
+                mask_img = mask_img.rotate(-rotation, expand=True, fillcolor=255)
 
-                ret_images2.append(pil2tensor(img))
+                ret_masks.append(pil2tensor(mask_img))
 
         return (
-            torch.cat(ret_images1, dim=0) if ret_images1 else None,
-            torch.cat(ret_images2, dim=0) if ret_images2 else None
+            torch.cat(ret_images, dim=0) if ret_images else None,
+            torch.cat(ret_masks, dim=0) if ret_masks else None
         )
 
 NODE_CLASS_MAPPINGS = {
@@ -113,5 +111,5 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "AutoCropByNPS": "auto crop by NPS"
+    "AutoCropByNPS": "Auto Crop by NPS"
 }
