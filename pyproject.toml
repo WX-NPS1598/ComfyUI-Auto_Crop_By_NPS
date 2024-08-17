@@ -1,0 +1,14 @@
+[project]
+name = "comfyui-auto_crop_by_nps"
+description = "A very useful automatic cropping tool! It can realize cropping, expansion and rotation functions in the form of a slider. "
+version = "1.0.0"
+license = {file = "LICENSE"}
+
+[project.urls]
+Repository = "https://github.com/WX-NPS1598/ComfyUI-Auto_Crop_By_NPS"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "ComfyUI-Auto_Crop_By_NPS"
+Icon = ""
